@@ -50,21 +50,17 @@ public class Bullet : MonoBehaviour
         Wall wall = collision.collider.GetComponent<Wall>();
         if (wall != null)
         {
-            // หักเลือด
             wall.TakeDamage(damage);
 
-            // แรงผลัก: ยิ่ง damage มาก ยิ่งดัน wall แรง
-            // สูตร: F_push = damage * mass * speed * pushMultiplier
             Rigidbody wallRb = collision.collider.GetComponent<Rigidbody>();
             if (wallRb != null)
             {
-                Vector3 pushDir   = -collision.contacts[0].normal;
-                float   speed     = rb.linearVelocity.magnitude;
-                float   pushForce = damage * mass * speed * pushMultiplier;
+                Vector3 pushDir = -collision.contacts[0].normal;
+                float speed = rb.linearVelocity.magnitude;
+                float pushForce = damage * mass * speed * pushMultiplier;
                 wallRb.AddForce(pushDir * pushForce, ForceMode.Impulse);
             }
+            // ไม่ Destroy — กระสุนกระดอนต่อได้ตาม Physic Material
         }
-
-        Destroy(gameObject);
     }
 }
