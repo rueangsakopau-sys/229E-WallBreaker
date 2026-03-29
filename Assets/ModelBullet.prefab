@@ -100,7 +100,7 @@ SphereCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2039918761354083199}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: e29cd3ab93435b9448d919c3472fa906, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -154,6 +154,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
   damage: 1
-  mass: 1
+  mass: 0.01
   radius: 0.05
-  spinRate: 1
+  pushMultiplier: 5

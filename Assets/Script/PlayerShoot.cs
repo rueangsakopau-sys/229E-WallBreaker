@@ -43,7 +43,6 @@ public class PlayerShoot : MonoBehaviour
             TryShoot();
     }
 
-    // วาดเส้นเล็ง + แสดง HP ของ Wall ที่ยังมีชีวิต ใกล้ผู้เล่นสุด (ไม่ต้องชี้เมาส์)
     void DrawAimLine()
     {
         if (lr == null || cam == null) return;
@@ -52,7 +51,6 @@ public class PlayerShoot : MonoBehaviour
         lr.SetPosition(0, gunBarrel.position);
         lr.SetPosition(1, ray.GetPoint(200f));
 
-        // หา Wall ทุกตัวใน scene เลือกตัวที่ HP > 0 และใกล้ผู้เล่นสุด
         Wall[] allWalls = FindObjectsOfType<Wall>();
 
         Wall activeWall = null;
@@ -75,47 +73,44 @@ public class PlayerShoot : MonoBehaviour
                 : "N/A";
     }
 
-    void TryShoot()
+void TryShoot()
+{
+    if (currentGun == null) return;
+    if (Time.time - lastShotTime < currentGun.cooldown) return;
+
+    lastShotTime = Time.time;
+    if (bulletPrefab == null || gunBarrel == null || cam == null) return;
+
+    Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+    Vector3 targetPoint = ray.GetPoint(100f);
+
+    if (Physics.Raycast(ray, out RaycastHit hit, 200f))
+        targetPoint = hit.point;
+
+    Vector3 direction = (targetPoint - gunBarrel.position).normalized;
+
+    GameObject b = Instantiate(bulletPrefab, gunBarrel.position, Quaternion.LookRotation(direction));
+    Rigidbody rb = b.GetComponent<Rigidbody>();
+
+    if (rb != null)
     {
-        if (currentGun == null) return;
-        if (Time.time - lastShotTime < currentGun.cooldown) return;
+        float damageBonus = currentGun != null ? currentGun.damage * 2f : 0f;
+        float finalSpeed = bulletSpeed + damageBonus;
 
-        lastShotTime = Time.time;
 
-        if (bulletPrefab == null || gunBarrel == null || cam == null) return;
+        rb.linearVelocity = direction * finalSpeed;
+        rb.useGravity = true;
+        
 
-        // คำนวณทิศทางจาก gunBarrel ไปยังจุดที่เมาส์ชี้
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-        Vector3 targetPoint = ray.GetPoint(100f);
-
-        // ถ้า raycast โดนอะไรก็ยิงไปที่จุดนั้นเลย
-        if (Physics.Raycast(ray, out RaycastHit hit, 200f))
-            targetPoint = hit.point;
-
-        Vector3 direction = (targetPoint - gunBarrel.position).normalized;
-
-        // Spawn กระสุน
-        GameObject b = Instantiate(bulletPrefab, gunBarrel.position, Quaternion.LookRotation(direction));
-        Rigidbody rb = b.GetComponent<Rigidbody>();
-
-        if (rb != null)
-        {
-            // ดาเมจยิ่งมาก ความเร็วกระสุนยิ่งสูง → ยิงได้ไกลขึ้น
-            float damageBonus = currentGun != null ? currentGun.damage * 2f : 0f;
-            float finalSpeed = bulletSpeed + damageBonus;
-
-            rb.linearVelocity = direction * finalSpeed;
-            rb.useGravity = true;
-        }
-
-        // ส่งข้อมูล damage ไปกับกระสุน
-        Bullet bullet = b.GetComponent<Bullet>();
-        if (bullet != null)
-            bullet.damage = currentGun.damage;
-
-        Destroy(b, 5f);
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
 
+    Bullet bullet = b.GetComponent<Bullet>();
+    if (bullet != null)
+        bullet.damage = currentGun.damage;
+
+    Destroy(b, 5f);
+}
     void UpdateGunUI()
     {
         if (currentGun == null) return;
@@ -128,7 +123,6 @@ public class PlayerShoot : MonoBehaviour
         if (cooldownText == null || currentGun == null) return;
 
         float remaining = currentGun.cooldown - (Time.time - lastShotTime);
-
         cooldownText.text = remaining <= 0 ? "Ready" : remaining.ToString("0.0") + "s";
     }
 
@@ -140,6 +134,10 @@ public class PlayerShoot : MonoBehaviour
 
     public void OnShopClick()
     {
+        // บันทึก HP ของ Wall ทุกตัวก่อนออกไป Shop
+        foreach (Wall wall in FindObjectsOfType<Wall>())
+            wall.SaveState();
+
         SceneManager.LoadScene("Shop");
     }
 
