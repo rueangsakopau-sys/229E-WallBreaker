@@ -1612,7 +1612,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 734cbeb924b9ede4d81b5f6c25b79efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  cash: 89999
+  cash: 0
   equippedGun: {fileID: 11400000, guid: d500f8281ec94714ca9b2d133853425f, type: 2}
   allGuns:
   - {fileID: 11400000, guid: d500f8281ec94714ca9b2d133853425f, type: 2}
