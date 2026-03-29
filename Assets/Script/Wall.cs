@@ -19,9 +19,8 @@ public class Wall : MonoBehaviour
     private bool hasBeenDestroyed = false;
     private float initialMaxHealth;
 
-    // Key สำหรับ PlayerPrefs — ใช้ชื่อ GameObject เป็น unique key
-    private string HPKey       => "Wall_HP_"          + gameObject.name;
-    private string DeadKey     => "Wall_Dead_"        + gameObject.name;
+    private string HPKey        => "Wall_HP_"         + gameObject.name;
+    private string DeadKey      => "Wall_Dead_"       + gameObject.name;
     private string DestroyedKey => "Wall_Destroyed_"  + gameObject.name;
 
     void Start()
@@ -29,20 +28,15 @@ public class Wall : MonoBehaviour
         initialMaxHealth = maxHealth;
         wallManager = FindObjectsOfType<WallBreakManager>()[0];
 
-        // โหลด HP ที่บันทึกไว้ก่อนออกไป Shop
-        // ถ้าไม่มีค่า (ขึ้นเกมใหม่) ให้ใช้ maxHealth ปกติ
         if (PlayerPrefs.HasKey(HPKey))
         {
             currentHealth = PlayerPrefs.GetFloat(HPKey);
             hasBeenDestroyed = PlayerPrefs.GetInt(DestroyedKey, 0) == 1;
 
-            // Wall ตายอยู่ตอนออกไป Shop → ซ่อน renderer/collider ไว้
             if (PlayerPrefs.GetInt(DeadKey, 0) == 1)
             {
                 GetComponent<Renderer>().enabled = false;
                 GetComponent<Collider>().enabled = false;
-                // ไม่ต้อง StartCoroutine respawn ซ้ำ เพราะ respawnTime นับใหม่ไม่ได้
-                // (ถ้าอยากให้ respawn ต่อได้ต้องบันทึก timestamp ด้วย — ดูหมายเหตุล่าง)
             }
         }
         else
@@ -53,10 +47,6 @@ public class Wall : MonoBehaviour
         UpdateHPUI();
     }
 
-    /// <summary>
-    /// เรียกจาก PlayerShoot.OnShopClick() ก่อน LoadScene("Shop")
-    /// เพื่อบันทึก HP ปัจจุบันลง PlayerPrefs
-    /// </summary>
     public void SaveState()
     {
         PlayerPrefs.SetFloat(HPKey, currentHealth);
@@ -70,12 +60,17 @@ public class Wall : MonoBehaviour
         if (currentHealth <= 0) return;
 
         currentHealth -= dmg;
+
         if (GameManager.Instance != null)
             GameManager.Instance.cash += cashPerHit * dmg;
+
         UpdateHPUI();
 
         if (currentHealth <= 0)
+        {
+            currentHealth = 0; // lock ที่ 0 กันติดลบ
             StartCoroutine(DestroyAndRespawn());
+        }
     }
 
     public float GetCurrentHP()
@@ -94,6 +89,7 @@ public class Wall : MonoBehaviour
         if (GameManager.Instance != null)
             GameManager.Instance.cash += cashOnDestroy;
 
+        // เรียก OnWallDestroyed ก่อน disable เสมอ
         if (!hasBeenDestroyed)
         {
             hasBeenDestroyed = true;
@@ -105,13 +101,13 @@ public class Wall : MonoBehaviour
 
         yield return new WaitForSeconds(respawnTime);
 
-        // Respawn — ล้าง saved state ด้วยเพื่อไม่ให้โหลดกลับมาเป็น dead อีก
         PlayerPrefs.DeleteKey(HPKey);
         PlayerPrefs.DeleteKey(DeadKey);
         PlayerPrefs.Save();
 
         maxHealth = initialMaxHealth;
         currentHealth = maxHealth;
+        hasBeenDestroyed = false; // reset ให้ respawn รอบใหม่ได้
         GetComponent<Renderer>().enabled = true;
         GetComponent<Collider>().enabled = true;
         UpdateHPUI();
